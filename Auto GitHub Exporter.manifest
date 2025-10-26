@@ -1,0 +1,13 @@
+
+
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"addin",
+	"id":	"replace_me",
+	"author":	"Simon Gerlach",
+	"description": "Automatic exporter of fusion files in the common format I used in my GitHub projects",
+	"version":	"0.1.0",
+	"runOnStartup":	false,
+	"supportedOS":	"windows|mac",
+	"editEnabled":	true
+}
