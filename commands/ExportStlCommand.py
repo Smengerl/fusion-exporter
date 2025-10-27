@@ -1,25 +1,25 @@
 import adsk.core
-#import adsk.fusion
+import adsk.fusion
 #import adsk.cam
 
 from pathlib import Path
-from typing import Optional
+from typing import cast
 
 # Import the entire apper package
 from ..apper import apper
 from .. import config
 
+
 # Command / input IDs (centralized constants)
-SELECTION_INPUT_ID = 'selection_input_id'
-TEXT_BOX_INPUT_ID = 'text_box_input_id'
+EXPORT_BASE_FOLDER_INPUT_ID = 'export_base_folder_input_id'
 ROOT_COMPONENT_INPUT_ID = 'root_component_input_id'
 EXPORT_PNG_INPUT_ID = 'export_png_files_input_id'
 PNG_SUB_PATH_INPUT_ID = 'png_sub_path_input_id'
 EXPORT_STL_INPUT_ID = 'export_stl_filest_input_id'
 STL_SUB_PATH_INPUT_ID = 'stl_sub_path_input_id'
 FULLWIDTH_TEXTBOX_ID = 'fullWidth_textBox'
-STRING_INPUT_ID = 'string_input_id'
-
+IMAGE_WIDTH_INPUT_ID = 'image_width_input_id'
+IMAGE_HEIGHT_INPUT_ID = 'image_height_input_id'
 
 # Class for a Fusion 360 Command
 # Place your program logic here
@@ -36,29 +36,6 @@ class ExportStlCommand(apper.Fusion360CommandBase):
     def on_destroy(self, command: adsk.core.Command, inputs, reason, input_values):
         pass
 
-    # Run when any input is changed.
-    # Can be used to check a value and then update the add-in UI accordingly
-    #    Args:
-    #        adsk.core.Command command: reference to the command object
-    #        adsk.core.CommandInputs inputs: quick reference directly to the commandInputs object
-    #        adsk.core.ValidateInputsEventArgs args: All of the args associated with the CommandEvent
-    #        dict input_values: Opinionated dictionary of the useful values a user entered.  The key is the command_id.
-    def on_input_changed(self, command: adsk.core.Command, inputs: adsk.core.CommandInputs,
-                        args: adsk.core.ValidateInputsEventArgs, input_values: dict):
-
-        all_selections = input_values.get(SELECTION_INPUT_ID, None)
-        text_box_input: Optional[adsk.core.CommandInput] = inputs.itemById(TEXT_BOX_INPUT_ID) if inputs else None
-
-        if all_selections is not None and len(all_selections) > 0:
-            # Update the text of the string value input to show the type of object selected
-            the_first_selection = all_selections[0]
-            if text_box_input is not None:
-                # use getattr to avoid attribute errors on selection proxies
-                text_box_input.text = getattr(the_first_selection, 'objectType', str(the_first_selection))
-        else:
-            # No selection -> clear or set a default message
-            if text_box_input is not None:
-                text_box_input.text = 'Nothing Selected'
 
 
 
@@ -70,9 +47,189 @@ class ExportStlCommand(apper.Fusion360CommandBase):
     #        input_values: Opinionated dictionary of the useful values a user entered.  The key is the command_id.
     def validate_inputs(self, command: adsk.core.Command, inputs: adsk.core.CommandInputs,
                         args: adsk.core.ValidateInputsEventArgs, input_values: dict) -> bool:
+        
 
+        is_stl_export_enabled: bool = input_values.get(EXPORT_STL_INPUT_ID, False)
+        stl_sub_path: str = input_values.get(STL_SUB_PATH_INPUT_ID, "")
+        stl_sub_path_input: adsk.core.StringValueCommandInput = cast(adsk.core.StringValueCommandInput, inputs.itemById(STL_SUB_PATH_INPUT_ID))
+        stl_sub_path_input.isValueError = False
+        if is_stl_export_enabled:
+            if stl_sub_path is None or len(stl_sub_path.strip()) == 0 or not Path(stl_sub_path).resolve(strict=False):
+                stl_sub_path_input.isValueError = True
+
+        is_png_export_enabled: bool = input_values.get(EXPORT_PNG_INPUT_ID, False)
+        png_sub_path: str = input_values.get(PNG_SUB_PATH_INPUT_ID, "")
+        png_sub_path_input: adsk.core.StringValueCommandInput = cast(adsk.core.StringValueCommandInput, inputs.itemById(PNG_SUB_PATH_INPUT_ID))
+        png_sub_path_input.isValueError = False
+        if is_png_export_enabled:
+            if png_sub_path is None or len(png_sub_path.strip()) == 0 or not Path(png_sub_path).resolve(strict=False):
+                png_sub_path_input.isValueError = True
+
+        # Either one need to be selected
+        if (is_png_export_enabled is False) and (is_stl_export_enabled is False):
+            return False
+
+        image_width = input_values.get(IMAGE_WIDTH_INPUT_ID, None)
+        if image_width is None:
+            return False
+
+        image_height = input_values.get(IMAGE_HEIGHT_INPUT_ID, None)
+        if image_height is None:
+            return False
+
+        # check if at least one component is selected
         all_selections = input_values.get(ROOT_COMPONENT_INPUT_ID, None)
-        return bool(all_selections and len(all_selections) > 0)
+        selectionValid:bool = bool(all_selections and len(all_selections) > 0)
+        return (selectionValid and not png_sub_path_input.isValueError and not stl_sub_path_input.isValueError)
+
+
+
+
+    def check_folder_validity(self, path: Path) -> str:
+        # 1. Prüfen, ob Pfad syntaktisch valide ist (z. B. keine ungültigen Zeichen)
+        try:
+            path.resolve(strict=False)
+        except Exception as e:
+            return f"Ungültiger Pfad: {e}"
+
+        # 2. Prüfen, ob bereits eine Datei mit diesem Namen existiert
+        if path.exists():
+            if path.is_file():
+                return "Eine Datei mit diesem Namen existiert bereits. Abbruch."
+
+            elif not path.is_dir():
+                return "Ist weder Verzeichnis noch Datei."
+
+        # 3. Create folder if not existing
+        else:
+            try:
+                path.mkdir(parents=True)
+            except Exception as e:
+                return f"Verzeichnis konnte nicht angelegt werden: {e}"
+
+        # 5. Prüfen, ob Verzeichnis schreibbar ist (Testdatei-Methode)
+        try:
+            testfile = path / ".deleteme.tmp"
+            with open(testfile, "w") as f:
+                f.write("test")
+            testfile.unlink()
+        except Exception as e:
+            return f"Verzeichnis ist nicht schreibbar: {e}"
+        
+        return None
+
+
+
+    def exportStl(self, fileName: str, occ: adsk.fusion.Occurrence):
+        # Get a reference to all relevant application objects in a dictionary
+        ao = apper.AppObjects()
+
+        # get active design  
+        app: adsk.core.Application = ao.app      
+        product: adsk.core.Product = app.activeProduct
+        design: adsk.fusion.Design = adsk.fusion.Design.cast(product)
+
+        # create a single exportManager instance
+        exportMgr: adsk.fusion.ExportManager = design.exportManager
+
+        # traverse all components and hide those not matching occ but assure occ is visible
+        root_comp: adsk.fusion.Component = design.rootComponent
+        for other_occ in root_comp.occurrences:
+            self.set_occurrence_recursive(other_occ, predicate=lambda o: o == occ)
+
+        # create stl exportOptions
+        stlExportOptions: adsk.fusion.STLExportOptions = exportMgr.createSTLExportOptions(occ, fileName)                
+
+        stlExportOptions = exportMgr.createSTLExportOptions(occ, fileName)                
+        exportMgr.execute(stlExportOptions)
+
+
+    
+    def set_occurrence_recursive(self, occurrence, predicate):
+        """
+        Recursively set visibility for an occurrence and its children.
+
+        Parameters:
+        - occurrence: the occurrence to process
+        - predicate: a callable that receives an occurrence and returns True to show it or False to hide it
+
+        """
+        
+        occurrence.isLightBulbOn = bool(predicate(occurrence)) # Decide visibility using predicate
+        # Rekursiv alle Unter-Occurrences durchlaufen
+        for child_occ in occurrence.childOccurrences:
+            self.set_occurrence_recursive(child_occ, predicate=predicate)
+
+
+
+    def exportPng(self, fileName: str, occ: adsk.fusion.Occurrence, image_width: int, image_height: int):
+        # Get a reference to all relevant application objects in a dictionary
+        ao = apper.AppObjects()
+
+        # get active design  
+        app: adsk.core.Application = ao.app      
+        product: adsk.core.Product = app.activeProduct
+        design: adsk.fusion.Design = adsk.fusion.Design.cast(product) # Product has to be of type Design
+
+        # traverse all components and hide those not matching occ but assure occ is visible
+        root_comp: adsk.fusion.Component = design.rootComponent
+        for other_occ in root_comp.occurrences:
+            self.set_occurrence_recursive(other_occ, predicate=lambda o: o == occ)
+
+        # Kamera auf BoundingBox der Komponente zentrieren
+        view: adsk.core.Viewport = app.activeViewport
+        #bbox = occ.boundingBox
+        view.fit()
+
+        # Exportieren
+        view.saveAsImageFile(fileName, image_width, image_height)
+        
+
+
+
+
+
+
+
+    def export_components(self, components, image_width: int, image_height: int, is_png_export_enabled:bool, png_path:Path, is_stl_export_enabled:bool, stl_path:Path):
+
+        # Get a reference to all relevant application objects in a dictionary
+        ao = apper.AppObjects()
+
+        # Set styles of progress dialog.
+        progressDialog = ao.ui.createProgressDialog()
+        progressDialog.cancelButtonText = 'Cancel'
+        progressDialog.isBackgroundTranslucent = False
+        progressDialog.isCancelButtonShown = True
+        # Show dialog
+        progressDialog.show('Progress Dialog', '%p (%v of %m components exported)', 0, len(components), 1)
+        for occ in components:
+
+            # Check if the user pressed the cancel button.
+            if progressDialog.wasCancelled:
+                break
+
+            if is_stl_export_enabled:
+                self.exportStl(str(stl_path / f"{occ.component.name}.stl"), occ)
+
+            if is_png_export_enabled:
+                self.exportPng(str(png_path / f"{occ.component.name}.png"), occ, image_width, image_height)
+
+            # Update progress value of progress dialog
+            progressDialog.progressValue += 1
+
+        # Hide the progress dialog at the end.
+        progressDialog.hide()
+
+        ao.ui.messageBox(
+            'Number of files exported: {} \n'.format(len(components)) +
+            'PNG export active:  {} \n'.format(png_path if is_png_export_enabled else 'no') +
+            'STL export active:  {} \n'.format(stl_path if is_stl_export_enabled else 'no'),
+            "Export success", 
+            adsk.core.MessageBoxButtonTypes.OKButtonType, 
+            adsk.core.MessageBoxIconTypes.WarningIconType)
+
+
 
 
     # Run when the user presses OK
@@ -84,35 +241,61 @@ class ExportStlCommand(apper.Fusion360CommandBase):
     #        input_values: Opinionated dictionary of the useful values a user entered.  The key is the command_id.
     def on_execute(self, command: adsk.core.Command, inputs: adsk.core.CommandInputs,
                         args: adsk.core.ValidateInputsEventArgs, input_values: dict):
-        # Get the values from the user input
-        # the_value = input_values.get('value_input_id')
-        png_export_active = input_values.get(EXPORT_PNG_INPUT_ID)
-        stl_export_active = input_values.get(EXPORT_STL_INPUT_ID)
-        all_selections = input_values.get(ROOT_COMPONENT_INPUT_ID)
-        string_input = input_values.get(STRING_INPUT_ID)
-
-
-
-        # Selections are returned as a list so lets get the first one and its name
-        if all_selections is not None and len(all_selections) > 0:
-            the_first_selection = all_selections[0]
-            the_selection_type = getattr(the_first_selection, 'objectType', str(the_first_selection))
-        else:
-            the_selection_type = 'Nothing Selected'
-
+     
 
         # Get a reference to all relevant application objects in a dictionary
         ao = apper.AppObjects()
+    
+        # Set styles of file dialog.   
+        folderDlg = ao.ui.createFolderDialog()
+        folderDlg.title = 'Choose Export Folder' 
+        folderDlg.initialDirectory = str(Path.home())  # Set initial directory to user's home folder
 
-        #converted_value = ao.units_manager.formatInternalValue(the_value, 'in', True)
+        # Show folder dialog
+        dlgResult = folderDlg.showDialog()
+        if dlgResult == adsk.core.DialogResults.DialogOK:
 
-        ao.ui.messageBox(
-                            'PNG export active:  {} \n'.format(png_export_active) +
-                            'STL export active:  {} \n'.format(stl_export_active) +
-                            'The string you typed was:  {} \n'.format(string_input) +
-                            'The type of the first object you selected is:  {} \n'.format(the_selection_type),
-    #                     'The drop down item you selected is:  {}'.format(the_drop_down)
-                            "Title")
+            path = Path(folderDlg.folder)
+            base_path_validity:str = self.check_folder_validity(path)
+            if base_path_validity is not None:
+                ao.ui.messageBox('The selected base folder is not valid: {} \n'.format(base_path_validity))
+                return
+
+            is_png_export_enabled: bool = input_values.get(EXPORT_PNG_INPUT_ID, False)
+            png_sub_path: str = input_values.get(PNG_SUB_PATH_INPUT_ID, "")
+            png_path = Path(folderDlg.folder + png_sub_path)
+            if is_png_export_enabled:
+                png_path_validity:str = self.check_folder_validity(png_path)
+                if png_path_validity is not None:
+                    ao.ui.messageBox('The selected base folder is not valid: {} \n'.format(png_path_validity))
+                    return
+
+            is_stl_export_enabled: bool = input_values.get(EXPORT_STL_INPUT_ID, False)
+            stl_sub_path: str = input_values.get(STL_SUB_PATH_INPUT_ID, "")
+            stl_path = Path(folderDlg.folder + stl_sub_path)
+            if is_stl_export_enabled:
+                stl_path_validity:str = self.check_folder_validity(stl_path)
+                if stl_path_validity is not None:
+                    ao.ui.messageBox('The selected base folder is not valid: {} \n'.format(stl_path_validity))
+                    return
+
+            image_width = input_values.get(IMAGE_WIDTH_INPUT_ID, None)
+            image_height = input_values.get(IMAGE_HEIGHT_INPUT_ID, None)
+            components = input_values.get(ROOT_COMPONENT_INPUT_ID)
+
+            self.export_components(components, image_width, image_height, is_png_export_enabled, png_path, is_stl_export_enabled, stl_path)
+
+        else:
+            ao.ui.messageBox(
+                'Export aborted. No files written.',
+                "Aborted", 
+                adsk.core.MessageBoxButtonTypes.OKButtonType, 
+                adsk.core.MessageBoxIconTypes.WarningIconType)
+
+
+
+
+
 
     # Run when the user selects your command icon from the Fusion 360 UI
     # Typically used to create and display a command dialog box
@@ -138,44 +321,20 @@ class ExportStlCommand(apper.Fusion360CommandBase):
         # Title: id, name, command prompt
         selectionCommand: adsk.core.SelectionCommandInput = inputs.addSelectionInput(ROOT_COMPONENT_INPUT_ID, 'Component to export', 'Select all the components to export')
         if (selectionCommand is not None):
-            selectionCommand.addSelectionFilter("Occurrences")
-            selectionCommand.addSelectionFilter("RootComponents")
+            selectionCommand.addSelectionFilter(adsk.core.SelectionCommandInput.Occurrences)
+            selectionCommand.addSelectionFilter(adsk.core.SelectionCommandInput.RootComponents)
             selectionCommand.setSelectionLimits(1, 0)  # Min 1, max unlimited selections
 
 
         # Select file path to export to...
-
-
-
-        # Create a default value using a string
-        # default_value = adsk.core.ValueInput.createByString('1.0 in')
-
-        # Get teh user's current units
-        # default_units = ao.units_manager.defaultLengthUnits
-
-        # Create a value input.  This will respect units and user defined equation input.
-        # inputs.addValueInput('value_input_id', '*Sample* Value Input', default_units, default_value)
+        baseFolderInputCommand: adsk.core.BoolValueCommandInput = inputs.addBoolValueInput(EXPORT_BASE_FOLDER_INPUT_ID, 'Select folder', False, "", True)
 
         # Other Input types
         inputs.addBoolValueInput(EXPORT_PNG_INPUT_ID, 'Export PNG files', True, "", True)
-        inputs.addStringValueInput(PNG_SUB_PATH_INPUT_ID, 'PNG file path:', 'Some Default Value')
+        inputs.addStringValueInput(PNG_SUB_PATH_INPUT_ID, 'PNG file path:', '/png')
 
         inputs.addBoolValueInput(EXPORT_STL_INPUT_ID, 'Export STL files', True, "", True)
-        inputs.addStringValueInput(STL_SUB_PATH_INPUT_ID, 'STL file path:', 'Some Default Value')
+        inputs.addStringValueInput(STL_SUB_PATH_INPUT_ID, 'STL file path:', '/stl')
 
-
-
-
-        # Create a string value input.
-        inputs.addStringValueInput(STRING_INPUT_ID, 'Path', 'Some Default Value')
-
-        # Read Only Text Box
-        #inputs.addTextBoxCommandInput(TEXT_BOX_INPUT_ID, 'Selection Type: ', 'Nothing Selected', 1, True)
-
-        # Create a Drop Down
-        #drop_style = adsk.core.DropDownStyles.TextListDropDownStyle
-        #drop_down_input = inputs.addDropDownCommandInput('drop_down_input_id', '*Sample* Drop Down', drop_style)
-        #drop_down_items = drop_down_input.listItems
-        #drop_down_items.add('List_Item_1', True, '')
-        #drop_down_items.add('List_Item_2', False, '')
-
+        inputs.addIntegerSpinnerCommandInput(IMAGE_WIDTH_INPUT_ID, 'Image width:', 100, 1000, 10, 800)
+        inputs.addIntegerSpinnerCommandInput(IMAGE_HEIGHT_INPUT_ID, 'Image height:', 100, 1000, 10, 600)
