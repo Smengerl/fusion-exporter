@@ -3,18 +3,20 @@ import traceback
 
 import os
 
+EXPORT_STL_PMG_COMMAND_ID = 'export_stl_png_cmd_id'
+EXPORT_ALL_STL_PMG_COMMAND_ID = 'export_all_stl_png_cmd_id'
+
 try:
     from . import config
     from .apper import apper
 
     # ************Samples**************
     # Basic Fusion 360 Command Base samples
-    from .commands.ExportStlCommand import ExportStlCommand
-    from .commands.ExportPngCommand import ExportPngCommand
+    from .commands.ExportStlPngCommand import ExportStlPngCommand
+    from .commands.ExportAllStlPngCommand import ExportAllPngStlCommand
 
     # Various Application event samples
     from .commands.ExportDocumentSavedEvents import ExportDocumentSavedEvent
-    from .commands.ExportWorkspaceActivatedEventHandler import ExportWorkspaceActivatedEventHandler
 
     # Create our addin definition object
     my_addin = apper.FusionApp(config.app_name, config.company_name, False)
@@ -22,13 +24,13 @@ try:
 
     # Register an icon in the toolbar and make this the defaulit from its dropdown
     my_addin.add_command(
-        'Export to STL',
-        ExportStlCommand,
+        'Export to STL/PNG with options',
+        ExportStlPngCommand,
         {
             # Description used in hover hint
-            'cmd_description': 'Export all components in current file as separate STL',
+            'cmd_description': 'Export all components in current file as separate STL and PNG files',
             
-            'cmd_id': 'sample_cmd_1',
+            'cmd_id': EXPORT_STL_PMG_COMMAND_ID,
             
             # List of workspace to add the command to. 
             # # in this case this is only the workspace to add this command to is "Konstruktion" = FusionSolidEnvironment
@@ -51,13 +53,13 @@ try:
 
     # Add another entry to the same dropdown
     my_addin.add_command(
-        'Export to PNG',
-        ExportPngCommand,
+        'Export all components to STL/PNG',
+        ExportAllPngStlCommand,
         {
             # Description used in hover hint
-            'cmd_description': 'Export all components in current file as images to separate PNG files',
+            'cmd_description': 'Export all components in current file as STL and PNGs',
 
-            'cmd_id': 'sample_cmd_2',
+            'cmd_id': EXPORT_ALL_STL_PMG_COMMAND_ID,
 
             # List of workspace to add the command to. 
             # # in this case this is only the workspace to add this command to is "Konstruktion" = FusionSolidEnvironment

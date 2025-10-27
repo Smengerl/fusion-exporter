@@ -17,7 +17,7 @@ IMAGE_WIDTH_INPUT_ID = 'image_width_input_id'
 IMAGE_HEIGHT_INPUT_ID = 'image_height_input_id'
 TRANSPARENCY_INPUT_ID = 'transparency_input_id'
 
-class ExportStlCommand(apper.Fusion360CommandBase):
+class ExportStlPngCommand(apper.Fusion360CommandBase):
     """UI command: collect inputs and delegate export work to export_helpers."""
 
     def on_preview(self, command: adsk.core.Command, inputs: adsk.core.CommandInputs, args, input_values):
@@ -118,6 +118,25 @@ class ExportStlCommand(apper.Fusion360CommandBase):
         # Delegate actual export logic to helper module
         export_helpers.export_components(components, export_stl, stl_path, export_png, png_path, w, h, transparency)
 
+
+    def selectComponents(self, selection_input: adsk.core.SelectionCommandInput):
+        # Pre-select all currently visible occurrences
+        try:
+            app = ao.app
+            product = app.activeProduct
+            design = adsk.fusion.Design.cast(product)
+            root = design.rootComponent
+            occs = root.occurrences
+            for i in range(occs.count):
+                occ = occs.item(i)
+                # Only add occurrences that are visible (light bulb on)
+                if getattr(occ, 'isLightBulbOn', True):
+                    sel.addSelection(occ)
+        except Exception:
+            # Best-effort: if anything fails, leave selection empty and continue
+            pass
+
+
     def on_create(self, command: adsk.core.Command, inputs: adsk.core.CommandInputs):
         ao = apper.AppObjects()
 
@@ -133,21 +152,9 @@ class ExportStlCommand(apper.Fusion360CommandBase):
         if sel:
             sel.addSelectionFilter(adsk.core.SelectionCommandInput.Occurrences)
             sel.setSelectionLimits(1, 0)
-            # Pre-select all currently visible occurrences
-            try:
-                app = ao.app
-                product = app.activeProduct
-                design = adsk.fusion.Design.cast(product)
-                root = design.rootComponent
-                occs = root.occurrences
-                for i in range(occs.count):
-                    occ = occs.item(i)
-                    # Only add occurrences that are visible (light bulb on)
-                    if getattr(occ, 'isLightBulbOn', True):
-                        sel.addSelection(occ)
-            except Exception:
-                # Best-effort: if anything fails, leave selection empty and continue
-                pass
+
+            selectComponents(sel)
+
         
         inputs.addBoolValueInput(EXPORT_STL_INPUT_ID, 'Export STL files', True, '', True)
         inputs.addStringValueInput(STL_SUB_PATH_INPUT_ID, 'STL subpath:', '/stl')
