@@ -15,8 +15,16 @@ for tool in magick; do # check required tool(s) — ImageMagick's 'magick' comma
   fi
 done
 
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo "Looking for .svg files in script folder: $SCRIPT_DIR"
+cd "$SCRIPT_DIR" || { echo "Failed to change directory to script folder"; exit 1; }
+
 # List of sizes to generate (width x height)
-sizes=(16 32 64)
+sizes=(16 32 64 128)
+
+
+
 
 # Iterate over all SVG files in the current directory
 for svg_file in *.svg; do
