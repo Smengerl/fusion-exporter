@@ -41,7 +41,7 @@ try:
             'toolbar_panel_id': 'Commands',
 
             # Path to icon resources
-            'cmd_resources': 'export_selected_icons',
+            'cmd_resources': 'visibility',
 
             # Command visibility
             'command_visible': True,
@@ -69,7 +69,7 @@ try:
             'toolbar_panel_id': 'Commands',
 
             # Path to icon resources
-            'cmd_resources': 'export_all_icons',
+            'cmd_resources': 'cards',
 
             # Command visibility
             'command_visible': True,
