@@ -19,7 +19,7 @@ try:
     from .commands.ExportDocumentSavedEvents import ExportDocumentSavedEvent
 
     # Create our addin definition object
-    my_addin = apper.FusionApp(config.app_name, config.company_name, False)
+    my_addin = apper.FusionApp(config.app_name, config.company_name, config.DEBUG)
     my_addin.root_path = config.app_path
 
     # Register an icon in the toolbar and make this the defaulit from its dropdown
@@ -41,7 +41,7 @@ try:
             'toolbar_panel_id': 'Commands',
 
             # Path to icon resources
-            'cmd_resources': 'export_stl_icons',
+            'cmd_resources': 'export_selected_icons',
 
             # Command visibility
             'command_visible': True,
@@ -69,7 +69,7 @@ try:
             'toolbar_panel_id': 'Commands',
 
             # Path to icon resources
-            'cmd_resources': 'export_png_icons',
+            'cmd_resources': 'export_all_icons',
 
             # Command visibility
             'command_visible': True,
@@ -82,14 +82,7 @@ try:
     app = adsk.core.Application.cast(adsk.core.Application.get())
     ui = app.userInterface
 
-    # Uncomment as necessary.  Running all at once can be overwhelming :)
-    # my_addin.add_custom_event("Auto GitHub Exporter_message_system", SampleCustomEvent)
-    # my_addin.add_document_event("Auto GitHub Exporter_open_event", app.documentActivated, SampleDocumentEvent1)
-    my_addin.add_document_event("Auto GitHub Exporter_save_event", app.documentSaved, ExportDocumentSavedEvent)
-    my_addin.add_workspace_event("Auto GitHub Exporter_workspace_event", ui.workspaceActivated, ExportWorkspaceActivatedEventHandler)
-    # my_addin.add_web_request_event("Auto GitHub Exporter_web_request_event", app.openedFromURL, SampleWebRequestOpened)
-    # my_addin.add_command_event("Auto GitHub Exporter_command_event", app.userInterface.commandStarting, SampleCommandEvent)
-    # my_addin.add_command_event("Auto GitHub Exporter_active_selection_event", ui.activeSelectionChanged, SampleActiveSelectionEvent)
+    my_addin.add_document_event("auto_exporter_save_event", app.documentSaved, ExportDocumentSavedEvent)
 
 except:
     app = adsk.core.Application.get()

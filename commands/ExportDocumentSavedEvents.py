@@ -1,10 +1,6 @@
 import adsk.core
-import adsk.fusion
 
 from ..apper import apper
-from .. import config
-from ..AutoExporter import AutoExporter
-# We will execute the already-registered commands via the FusionApp command id mapping
 
 
 

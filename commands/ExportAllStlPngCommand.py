@@ -1,25 +1,12 @@
 import adsk.core
 import adsk.fusion
-from pathlib import Path
+from .AbstractExportStlPngCommand import AbstractExportStlPngCommand
 
-from ..apper import apper
-from .. import config
-from .ExportStlPngCommand import ExportStlPngCommand
-from . import export_helpers
-
-
-class ExportAllPngStlCommand(ExportStlPngCommand):
-    """Export all top-level occurrences in the active design.
-
-    This subclasses the normal ExportStlPngCommand for UI/validation reuse
-    but implements an on_execute that ignores the selection input and
-    operates on every occurrence in the root component.
-    """
-
-
+class ExportAllPngStlCommand(AbstractExportStlPngCommand):
+    """Export all top-level occurrences in the active design."""
 
     def selectComponents(self, selection_input: adsk.core.SelectionCommandInput):
-        # Pre-select all currently visible occurrences
+        # Pre-select all occurrences
         try:
             app = ao.app
             product = app.activeProduct
@@ -28,7 +15,7 @@ class ExportAllPngStlCommand(ExportStlPngCommand):
             occs = root.occurrences
             for i in range(occs.count):
                 occ = occs.item(i)
-                sel.addSelection(occ)
+                selection_input.addSelection(occ)
         except Exception:
             # Best-effort: if anything fails, leave selection empty and continue
             pass
