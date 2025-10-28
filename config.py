@@ -1,7 +1,7 @@
 import os.path
 
 app_name = 'Auto GitHub Exporter'
-company_name = "my_company"
+company_name = "smengerl"
 
 
 
