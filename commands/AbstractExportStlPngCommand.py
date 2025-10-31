@@ -12,6 +12,8 @@ from .. import config
 ROOT_COMPONENT_INPUT_ID = 'root_component_input_id'
 EXPORT_PNG_INPUT_ID = 'export_png_files_input_id'
 PNG_SUB_PATH_INPUT_ID = 'png_sub_path_input_id'
+EXPORT_ZSB_INPUT_ID = 'export_zsb_filest_input_id'
+ZSB_SUB_PATH_INPUT_ID = 'zsb_sub_path_input_id'
 EXPORT_STL_INPUT_ID = 'export_stl_filest_input_id'
 STL_SUB_PATH_INPUT_ID = 'stl_sub_path_input_id'
 FULLWIDTH_TEXTBOX_ID = 'fullWidth_textBox'
@@ -93,6 +95,15 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
                 ao.ui.messageBox(f'Invalid PNG folder: {png_path} - {err}')  # type: ignore
                 return
 
+        export_zsb = input_values.get(EXPORT_ZSB_INPUT_ID, config.EXPORT_ZSB_DEFAULT_VALUE)
+        zsb_sub = input_values.get(ZSB_SUB_PATH_INPUT_ID, config.ZSB_SUB_PATH_DEFAULT_VALUE)
+        zsb_path = (base / zsb_sub.lstrip('/')) if export_zsb else base
+        if export_zsb:
+            err = export_helpers.check_folder_validity(zsb_path)
+            if err:
+                ao.ui.messageBox(f'Invalid ZSB folder: {zsb_path} - {err}')  # type: ignore
+                return
+            
         export_stl = input_values.get(EXPORT_STL_INPUT_ID, config.EXPORT_STL_DEFAULT_VALUE)
         stl_sub = input_values.get(STL_SUB_PATH_INPUT_ID, config.STL_SUB_PATH_DEFAULT_VALUE)
         stl_path = (base / stl_sub.lstrip('/')) if export_stl else base
@@ -129,24 +140,29 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
             ao.ui.messageBox(f'Invalid option to include flagged components {include_flagged_components}: {type(include_flagged_components).__name__}')  # type: ignore
             return
         
-        # Delegate actual export logic to helper module
-        export_helpers.export_components(
-            components, 
-            include_referenced_components, include_flagged_components,
-            export_stl, stl_path, 
-            export_png, png_path, 
-            w, h)
 
         # Save preferences for next time
-        pref: dict = app_context.get_preferences()
+        pref = app_context.get_preferences()
         pref[config.EXPORT_STL_KEY] = export_stl
         pref[config.STL_SUB_PATH_KEY] = stl_path
+        pref[config.EXPORT_ZSB_KEY] = export_zsb
+        pref[config.ZSB_SUB_PATH_KEY] = zsb_path
         pref[config.EXPORT_PNG_KEY] = export_png
         pref[config.PNG_SUB_PATH_KEY] = png_path
         pref[config.INCLUDE_REFERENCED_COMPONENTS_KEY] = include_referenced_components
         pref[config.INCLUDE_FLAGGED_COMPONENTS_KEY] = include_flagged_components
         pref[config.IMAGE_WIDTH_KEY] = w
         pref[config.IMAGE_HEIGHT_KEY] = h
+
+        # Delegate actual export logic to helper module
+        export_helpers.export_components(
+            components, 
+            include_referenced_components, include_flagged_components,
+            export_stl, stl_path, 
+            export_zsb, zsb_path, 
+            export_png, png_path, 
+            w, h)
+
 
 
 
@@ -171,13 +187,25 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
 
         pref: dict = app_context.get_preferences()
             
-        inputs.addBoolValueInput(EXPORT_STL_INPUT_ID, 'Export STL files', True, '', pref[config.EXPORT_STL_KEY])
-        inputs.addStringValueInput(STL_SUB_PATH_INPUT_ID, 'STL subpath:', pref[config.STL_SUB_PATH_KEY])
 
-        inputs.addBoolValueInput(EXPORT_PNG_INPUT_ID, 'Export PNG files', True, '', pref[config.EXPORT_PNG_KEY])
-        inputs.addStringValueInput(PNG_SUB_PATH_INPUT_ID, 'PNG subpath:', pref[config.PNG_SUB_PATH_KEY])
-        inputs.addIntegerSpinnerCommandInput(IMAGE_WIDTH_INPUT_ID, 'Image width:', 100, 2000, 1, pref[config.IMAGE_WIDTH_KEY])
-        inputs.addIntegerSpinnerCommandInput(IMAGE_HEIGHT_INPUT_ID, 'Image height:', 100, 2000, 1, pref[config.IMAGE_HEIGHT_KEY])
-        inputs.addBoolValueInput(INCLUDE_REFERENCED_COMPONENTS_INPUT_ID, 'Include referenced components:', True, '', pref[config.INCLUDE_REFERENCED_COMPONENTS_KEY])
+        inputs = command.commandInputs
+
+        inputs.addBoolValueInput(INCLUDE_REFERENCED_COMPONENTS_INPUT_ID, 'Include screws and referenced components:', True, '', pref[config.INCLUDE_REFERENCED_COMPONENTS_KEY])
         inputs.addBoolValueInput(INCLUDE_FLAGGED_COMPONENTS_INPUT_ID, 'Include "_*" components:', True, '', pref[config.INCLUDE_FLAGGED_COMPONENTS_KEY])
+
+        inputs.addIntegerSpinnerCommandInput(IMAGE_WIDTH_INPUT_ID, 'PNG+ZSB width:', 100, 2000, 1, pref[config.IMAGE_WIDTH_KEY])
+        inputs.addIntegerSpinnerCommandInput(IMAGE_HEIGHT_INPUT_ID, 'PNG+ZSB height:', 100, 2000, 1, pref[config.IMAGE_HEIGHT_KEY])
+
+        stl_group = inputs.addGroupCommandInput('stl_group_id', 'STL Export (Individual components)')
+        stl_group.children.addBoolValueInput(EXPORT_STL_INPUT_ID, 'Enabled', True, '', pref[config.EXPORT_STL_KEY])
+        stl_group.children.addStringValueInput(STL_SUB_PATH_INPUT_ID, 'Subfolder:', pref[config.STL_SUB_PATH_KEY])
+
+        zsb_group = inputs.addGroupCommandInput('zsb_group_id', 'ZSB Export (Assemblies of multiple compoenents)')
+        zsb_group.children.addBoolValueInput(EXPORT_ZSB_INPUT_ID, 'Enabled', True, '', pref[config.EXPORT_ZSB_KEY])
+        zsb_group.children.addStringValueInput(ZSB_SUB_PATH_INPUT_ID, 'Subfolder:', pref[config.ZSB_SUB_PATH_KEY])
+
+        png_group = inputs.addGroupCommandInput('png_group_id', 'PNG Export (Individual components)')
+        png_group.children.addBoolValueInput(EXPORT_PNG_INPUT_ID, 'Export PNG files', True, '', pref[config.EXPORT_PNG_KEY])
+        png_group.children.addStringValueInput(PNG_SUB_PATH_INPUT_ID, 'PNG subpath:', pref[config.PNG_SUB_PATH_KEY])
+        
 

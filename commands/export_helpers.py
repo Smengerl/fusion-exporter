@@ -46,6 +46,18 @@ def set_occurrence_recursive(occurrence: adsk.fusion.Occurrence, predicate: Call
         child = children.item(i)
         set_occurrence_recursive(child, predicate)
 
+def is_parent_of(potential_parent: adsk.fusion.Occurrence, occurrence: adsk.fusion.Occurrence) -> bool:
+    if (occurrence == potential_parent):
+        return True
+    else:
+        children = potential_parent.childOccurrences
+        for i in range(children.count):
+            child = children.item(i)
+            if is_parent_of(child, occurrence):
+                return True
+    return False
+
+
 
 def sanitize_filename(name: str, replacement: str = '_') -> str:
     """Return a filesystem-safe filename by replacing unsafe characters.
@@ -85,11 +97,10 @@ def export_stl_to_file(file_name: str, occ: adsk.fusion.Occurrence):
     for i in range(occs.count):
         other = occs.item(i)
         #other.isIsolated = True
-        set_occurrence_recursive(other, lambda o: o == occ)
+        set_occurrence_recursive(other, lambda o: is_parent_of(o, occ)) # Make the current occurence and all its parents visible
 
     opts = export_mgr.createSTLExportOptions(occ, file_name)
     export_mgr.execute(opts)
-
 
 def export_png_to_file(file_name: str, occ: adsk.fusion.Occurrence, width: int, height: int):
     """Export a viewport snapshot of the given occurrence to an PNG file.
@@ -103,7 +114,9 @@ def export_png_to_file(file_name: str, occ: adsk.fusion.Occurrence, width: int, 
     occs = root.occurrences
     for i in range(occs.count):
         other = occs.item(i)
-        set_occurrence_recursive(other, lambda o: o == occ)
+        set_occurrence_recursive(other, lambda o: is_parent_of(o, occ)) # Make the current occurence and all its parents visible
+
+    set_occurrence_recursive(occ, lambda o: True) # Ensure all children of occurence are also visible
 
     view = app.activeViewport
     view.fit()
@@ -117,11 +130,14 @@ def export_png_to_file(file_name: str, occ: adsk.fusion.Occurrence, width: int, 
 #    view.saveAsImageFileWithOptions(export_options)
 
 
+def is_zsb(occ: adsk.fusion.Occurrence) -> bool:
+    return occ.childOccurrences.count > 0
 
 def export_components(components: List[adsk.fusion.Occurrence], 
                       include_referenced_components: bool,
                       include_flagged_components: bool,
                       export_stl: bool, stl_path: Path,
+                      export_zsb: bool, zsb_path: Path,
                       export_png: bool, png_path: Path, 
                       width: int, height: int):
     ao = apper.AppObjects()
@@ -135,6 +151,9 @@ def export_components(components: List[adsk.fusion.Occurrence],
     exported_components = set()
 
     skippedItems = 0
+    zsb_exported = 0
+    stl_exported = 0
+    png_exported = 0
     for occ in components:
         dlg.progressValue += 1
         if occ.isReferencedComponent and not include_referenced_components:
@@ -152,15 +171,23 @@ def export_components(components: List[adsk.fusion.Occurrence],
 
         if dlg.wasCancelled:
             break
-        if export_stl:
-            safe = sanitize_filename(occ.component.name)
-            out_stl = str((stl_path / f"{safe}.stl").resolve())
-            export_stl_to_file(out_stl, occ)
-        if export_png:
-            safe = sanitize_filename(occ.component.name)
-            out_png = str((png_path / f"{safe}.png").resolve())
-            export_png_to_file(out_png, occ, width, height)
+
+        safe = sanitize_filename(occ.component.name)
+        if is_zsb(occ):
+            if export_zsb:
+                out_zsb = str((zsb_path / f"{safe}.png").resolve())
+                export_png_to_file(out_zsb, occ, width, height)
+                zsb_exported += 1
+        else:
+            if export_stl:
+                out_stl = str((stl_path / f"{safe}.stl").resolve())
+                export_stl_to_file(out_stl, occ)
+                stl_exported += 1
+            if export_png:
+                out_png = str((png_path / f"{safe}.png").resolve())
+                export_png_to_file(out_png, occ, width, height)
+                png_exported += 1
 
 
     dlg.hide()
-    ao.ui.messageBox(f"Export finished.\n{len(components)} items processed.\n{skippedItems} skipped.\nPNG exported: {export_png}\nSTL exported: {export_stl}")  # type: ignore
+    ao.ui.messageBox(f"Export finished.\n{len(components)} items processed of which {skippedItems} were skipped.\n\n{stl_exported} STL exported.\n{zsb_exported} ZSB exported.\n{png_exported} PNG exported.")  # type: ignore

@@ -3,8 +3,8 @@ import traceback
 
 from ..apper import apper
 
-from . import ExportVisibleStlPngCommand
-from . import ExportAllStlPngCommand
+from .ExportVisibleStlPngCommand import ExportVisibleStlPngCommand
+from .ExportAllStlPngCommand import ExportAllStlPngCommand
 
 class ExportDocumentSavedEvent(apper.Fusion360DocumentEvent):
 

@@ -17,6 +17,8 @@ EXPORT_STL_KEY = 'export_stl'
 STL_SUB_PATH_KEY = 'stl_sub_path'
 EXPORT_PNG_KEY = 'export_png'
 PNG_SUB_PATH_KEY = 'png_sub_path'
+EXPORT_ZSB_KEY = 'export_zsb'
+ZSB_SUB_PATH_KEY = 'zsb_sub_path'
 IMAGE_WIDTH_KEY = 'image_width'
 IMAGE_HEIGHT_KEY = 'image_height'
 INCLUDE_REFERENCED_COMPONENTS_KEY = 'include_referenced_components'
@@ -25,6 +27,8 @@ INCLUDE_FLAGGED_COMPONENTS_KEY = 'include_flagged_components'
 
 EXPORT_STL_DEFAULT_VALUE = True
 STL_SUB_PATH_DEFAULT_VALUE = '/stl'
+EXPORT_ZSB_DEFAULT_VALUE = True
+ZSB_SUB_PATH_DEFAULT_VALUE = '/zsb'
 EXPORT_PNG_DEFAULT_VALUE = True
 PNG_SUB_PATH_DEFAULT_VALUE = '/png'
 IMAGE_WIDTH_DEFAULT_VALUE = 800
