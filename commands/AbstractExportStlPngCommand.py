@@ -14,6 +14,7 @@ EXPORT_PNG_INPUT_ID = 'export_png_files_input_id'
 PNG_SUB_PATH_INPUT_ID = 'png_sub_path_input_id'
 EXPORT_ZSB_INPUT_ID = 'export_zsb_filest_input_id'
 ZSB_SUB_PATH_INPUT_ID = 'zsb_sub_path_input_id'
+EXPORT_FULL_ZSB_INPUT_ID = 'export_full_zsb_input_id'
 EXPORT_STL_INPUT_ID = 'export_stl_filest_input_id'
 STL_SUB_PATH_INPUT_ID = 'stl_sub_path_input_id'
 FULLWIDTH_TEXTBOX_ID = 'fullWidth_textBox'
@@ -98,12 +99,14 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
         export_zsb = input_values.get(EXPORT_ZSB_INPUT_ID, config.EXPORT_ZSB_DEFAULT_VALUE)
         zsb_sub = input_values.get(ZSB_SUB_PATH_INPUT_ID, config.ZSB_SUB_PATH_DEFAULT_VALUE)
         zsb_path = (base / zsb_sub.lstrip('/')) if export_zsb else base
+        full_zsb_export = input_values.get(EXPORT_FULL_ZSB_INPUT_ID, config.EXPORT_FULL_ZSB_DEFAULT_VALUE)
         if export_zsb:
             err = export_helpers.check_folder_validity(zsb_path)
             if err:
                 ao.ui.messageBox(f'Invalid ZSB folder: {zsb_path} - {err}')  # type: ignore
                 return
-            
+                            
+
         export_stl = input_values.get(EXPORT_STL_INPUT_ID, config.EXPORT_STL_DEFAULT_VALUE)
         stl_sub = input_values.get(STL_SUB_PATH_INPUT_ID, config.STL_SUB_PATH_DEFAULT_VALUE)
         stl_path = (base / stl_sub.lstrip('/')) if export_stl else base
@@ -119,11 +122,11 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
             ao.ui.messageBox('Image size not specified')  # type: ignore
             return
 
-        components: core.Occurence = input_values.get(ROOT_COMPONENT_INPUT_ID)
+        components: adsk.core.Occurence = input_values.get(ROOT_COMPONENT_INPUT_ID)
         if components is None:
             ao.ui.messageBox('No components selected')  # type: ignore
             return
-
+        
         try:
             w = int(width)
             h = int(height)
@@ -147,6 +150,7 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
         pref[config.STL_SUB_PATH_KEY] = stl_path
         pref[config.EXPORT_ZSB_KEY] = export_zsb
         pref[config.ZSB_SUB_PATH_KEY] = zsb_path
+        pref[config.EXPORT_FULL_ZSB_KEY] = full_zsb_export
         pref[config.EXPORT_PNG_KEY] = export_png
         pref[config.PNG_SUB_PATH_KEY] = png_path
         pref[config.INCLUDE_REFERENCED_COMPONENTS_KEY] = include_referenced_components
@@ -160,6 +164,7 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
             include_referenced_components, include_flagged_components,
             export_stl, stl_path, 
             export_zsb, zsb_path, 
+            full_zsb_export,
             export_png, png_path, 
             w, h)
 
@@ -168,14 +173,6 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
 
     def on_create(self, command: adsk.core.Command, inputs: adsk.core.CommandInputs):
         ao = apper.AppObjects()
-
-        msg = (
-            '<div align=center>Exports components for publishing to GitHub</div>'
-            '<div align=left>1. Select components to export</div>'
-            '<div align=left>2. Choose options</div>'
-            '<div align=left>3. Hit OK and select target folder</div>'
-        )
-        inputs.addTextBoxCommandInput(FULLWIDTH_TEXTBOX_ID, '', msg, 5, True)
 
         sel = inputs.addSelectionInput(ROOT_COMPONENT_INPUT_ID, 'Components', 'Select components to export')
         if sel:
@@ -203,6 +200,7 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
         zsb_group = inputs.addGroupCommandInput('zsb_group_id', 'ZSB Export (Assemblies of multiple compoenents)')
         zsb_group.children.addBoolValueInput(EXPORT_ZSB_INPUT_ID, 'Enabled', True, '', pref[config.EXPORT_ZSB_KEY])
         zsb_group.children.addStringValueInput(ZSB_SUB_PATH_INPUT_ID, 'Subfolder:', pref[config.ZSB_SUB_PATH_KEY])
+        zsb_group.children.addBoolValueInput(EXPORT_FULL_ZSB_INPUT_ID, 'Export full assembly', True, '', pref[config.EXPORT_FULL_ZSB_KEY])
 
         png_group = inputs.addGroupCommandInput('png_group_id', 'PNG Export (Individual components)')
         png_group.children.addBoolValueInput(EXPORT_PNG_INPUT_ID, 'Export PNG files', True, '', pref[config.EXPORT_PNG_KEY])
