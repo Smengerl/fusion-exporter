@@ -84,13 +84,14 @@ def export_stl_to_file(file_name: str, occ: adsk.fusion.Occurrence):
     occs = root.occurrences
     for i in range(occs.count):
         other = occs.item(i)
+        #other.isIsolated = True
         set_occurrence_recursive(other, lambda o: o == occ)
 
     opts = export_mgr.createSTLExportOptions(occ, file_name)
     export_mgr.execute(opts)
 
 
-def export_png_to_file(file_name: str, occ: adsk.fusion.Occurrence, width: int, height: int, transparency: bool):
+def export_png_to_file(file_name: str, occ: adsk.fusion.Occurrence, width: int, height: int):
     """Export a viewport snapshot of the given occurrence to an PNG file.
     """
     ao = apper.AppObjects()
@@ -118,18 +119,37 @@ def export_png_to_file(file_name: str, occ: adsk.fusion.Occurrence, width: int, 
 
 
 def export_components(components: List[adsk.fusion.Occurrence], 
-                      export_png: bool, png_path: Path, 
+                      include_referenced_components: bool,
+                      include_flagged_components: bool,
                       export_stl: bool, stl_path: Path,
-                      width: int, height: int, transparency: bool):
+                      export_png: bool, png_path: Path, 
+                      width: int, height: int):
     ao = apper.AppObjects()
 
     dlg = ao.ui.createProgressDialog()
     dlg.cancelButtonText = 'Cancel'
     dlg.isBackgroundTranslucent = False
     dlg.isCancelButtonShown = True
-    dlg.show('Exporting', '%p (%v of %m components exported)', 0, len(components), 1)
+    dlg.show('Exporting', '%p%% (%v of %m components exported)', 0, len(components), 1)
+    
+    exported_components = set()
 
+    skippedItems = 0
     for occ in components:
+        dlg.progressValue += 1
+        if occ.isReferencedComponent and not include_referenced_components:
+            skippedItems += 1
+            continue
+        if occ.name.startswith('_') and not include_flagged_components:
+            skippedItems += 1
+            continue
+
+        if occ.component.id in exported_components:
+            skippedItems += 1
+            continue
+        else:
+            exported_components.add(occ.component.id)
+
         if dlg.wasCancelled:
             break
         if export_stl:
@@ -139,8 +159,8 @@ def export_components(components: List[adsk.fusion.Occurrence],
         if export_png:
             safe = sanitize_filename(occ.component.name)
             out_png = str((png_path / f"{safe}.png").resolve())
-            export_png_to_file(out_png, occ, width, height, transparency)
-        dlg.progressValue += 1
+            export_png_to_file(out_png, occ, width, height)
+
 
     dlg.hide()
-    ao.ui.messageBox(f"Export finished. {len(components)} items processed. PNG exported: {export_png}, STL exported: {export_stl}")  # type: ignore
+    ao.ui.messageBox(f"Export finished.\n{len(components)} items processed.\n{skippedItems} skipped.\nPNG exported: {export_png}\nSTL exported: {export_stl}")  # type: ignore

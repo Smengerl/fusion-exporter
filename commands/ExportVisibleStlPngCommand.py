@@ -1,12 +1,18 @@
 import adsk.core
+import traceback
 from .AbstractExportStlPngCommand import AbstractExportStlPngCommand
 
-class ExportStlPngCommand(AbstractExportStlPngCommand):
+from ..apper import apper
+
+class ExportVisibleStlPngCommand(AbstractExportStlPngCommand):
     """Export all currently selected occurrences in the active design."""
+
+    CMD_ID = 'export_stl_png_cmd_id'
 
     def selectComponents(self, selection_input: adsk.core.SelectionCommandInput):
         # Pre-select all currently visible occurrences
         try:
+            ao = apper.AppObjects()
             app = ao.app
             product = app.activeProduct
             design = adsk.fusion.Design.cast(product)

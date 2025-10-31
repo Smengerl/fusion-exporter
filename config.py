@@ -1,7 +1,7 @@
 import os.path
 
 app_name = 'Auto GitHub Exporter'
-company_name = "https://github.com/Smengerl/"
+company_name = "smengerl on github"
 
 
 
@@ -10,6 +10,27 @@ company_name = "https://github.com/Smengerl/"
 # to set this to True while developing an add-in and set it to False when you
 # are ready to distribute it.
 DEBUG = True
+
+GROUP_PREFERENCES = 'AutoExporterPreferences'
+
+EXPORT_STL_KEY = 'export_stl'
+STL_SUB_PATH_KEY = 'stl_sub_path'
+EXPORT_PNG_KEY = 'export_png'
+PNG_SUB_PATH_KEY = 'png_sub_path'
+IMAGE_WIDTH_KEY = 'image_width'
+IMAGE_HEIGHT_KEY = 'image_height'
+INCLUDE_REFERENCED_COMPONENTS_KEY = 'include_referenced_components'
+INCLUDE_FLAGGED_COMPONENTS_KEY = 'include_flagged_components'
+
+
+EXPORT_STL_DEFAULT_VALUE = True
+STL_SUB_PATH_DEFAULT_VALUE = '/stl'
+EXPORT_PNG_DEFAULT_VALUE = True
+PNG_SUB_PATH_DEFAULT_VALUE = '/png'
+IMAGE_WIDTH_DEFAULT_VALUE = 800
+IMAGE_HEIGHT_DEFAULT_VALUE = 600
+INCLUDE_REFERENCED_COMPONENTS_DEFAULT_VALUE = False
+INCLUDE_FLAGGED_COMPONENTS_DEFAULT_VALUE = False
 
 
 
