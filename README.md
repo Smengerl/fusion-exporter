@@ -32,10 +32,9 @@ The buttons to start the export in the quick access toolbar and the Add-In menu.
 ### Output
 The exporter creates a repository-ready structure with exported binaries and preview images:
 
-- A folder containing one `.stl` file per exported component
-- A folder with preview images for each component
-
-Components that contain child components are treated as assemblies ("ZSB"). Assemblies are not exported as `.stl`; preview images can still be created if selected.
+- A folder containing one `.stl` file per exported component that contains bodies
+- A folder with preview images for each component that contain bodies
+- A folder with preview images for each assembly (component comprising of further components) including the full assembly of all components
 
 ### Options
 
@@ -44,6 +43,7 @@ After starting an export you can adjust options such as:
 - Skip components whose name starts with `_` (useful for clones or mirrored parts)
 - Exclude referenced components (for example screws) from export
 - Set image dimensions for preview exports
+- Define a name for the root if this contains bodies to export
 
 All these settings are saved automatically when an export is started.
 

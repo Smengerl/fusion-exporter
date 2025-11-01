@@ -207,22 +207,22 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
         inputs.addBoolValueInput(INCLUDE_REFERENCED_COMPONENTS_INPUT_ID, 'Include screws and referenced components:', True, '', pref[config.INCLUDE_REFERENCED_COMPONENTS_KEY])
         inputs.addBoolValueInput(INCLUDE_FLAGGED_COMPONENTS_INPUT_ID, 'Include "_*" components:', True, '', pref[config.INCLUDE_FLAGGED_COMPONENTS_KEY])
 
-        inputs.addIntegerSpinnerCommandInput(IMAGE_WIDTH_INPUT_ID, 'PNG+ZSB width:', 100, 2000, 1, pref[config.IMAGE_WIDTH_KEY])
-        inputs.addIntegerSpinnerCommandInput(IMAGE_HEIGHT_INPUT_ID, 'PNG+ZSB height:', 100, 2000, 1, pref[config.IMAGE_HEIGHT_KEY])
+        inputs.addIntegerSpinnerCommandInput(IMAGE_WIDTH_INPUT_ID, 'Picture width:', 100, 2000, 1, pref[config.IMAGE_WIDTH_KEY])
+        inputs.addIntegerSpinnerCommandInput(IMAGE_HEIGHT_INPUT_ID, 'Picture height:', 100, 2000, 1, pref[config.IMAGE_HEIGHT_KEY])
         inputs.addStringValueInput(ROOT_COMPONENT_NAME_INPUT_ID, 'Root compoent name:', pref[config.ROOT_COMPONENT_NAME_KEY])
 
-        stl_group = inputs.addGroupCommandInput('stl_group_id', 'STL Export (Individual components)')
-        stl_group.children.addBoolValueInput(EXPORT_STL_INPUT_ID, 'Enabled', True, '', pref[config.EXPORT_STL_KEY])
+        stl_group = inputs.addGroupCommandInput('stl_group_id', 'Component STL Export')
+        stl_group.children.addBoolValueInput(EXPORT_STL_INPUT_ID, 'Export STLs', True, '', pref[config.EXPORT_STL_KEY])
         stl_group.children.addStringValueInput(STL_SUB_PATH_INPUT_ID, 'Subfolder:', pref[config.STL_SUB_PATH_KEY])
 
-        zsb_group = inputs.addGroupCommandInput('zsb_group_id', 'ZSB Export (Assemblies of multiple compoenents)')
-        zsb_group.children.addBoolValueInput(EXPORT_ZSB_INPUT_ID, 'Enabled', True, '', pref[config.EXPORT_ZSB_KEY])
+        zsb_group = inputs.addGroupCommandInput('zsb_group_id', 'Assembly pictures (PNG) = Components containing further compoenents')
+        zsb_group.children.addBoolValueInput(EXPORT_ZSB_INPUT_ID, 'Export assembly pictures:', True, '', pref[config.EXPORT_ZSB_KEY])
         zsb_group.children.addStringValueInput(ZSB_SUB_PATH_INPUT_ID, 'Subfolder:', pref[config.ZSB_SUB_PATH_KEY])
-        zsb_group.children.addBoolValueInput(EXPORT_FULL_ZSB_INPUT_ID, 'Export full assembly', True, '', pref[config.EXPORT_FULL_ZSB_KEY])
+        zsb_group.children.addBoolValueInput(EXPORT_FULL_ZSB_INPUT_ID, 'Include export of full assembly', True, '', pref[config.EXPORT_FULL_ZSB_KEY])
         zsb_group.children.addStringValueInput(EXPORT_FULL_ZSB_NAME_INPUT_ID, 'Full assembly name:', pref[config.EXPORT_FULL_ZSB_NAME_KEY])
 
-        png_group = inputs.addGroupCommandInput('png_group_id', 'PNG Export (Individual components)')
-        png_group.children.addBoolValueInput(EXPORT_PNG_INPUT_ID, 'Export PNG files', True, '', pref[config.EXPORT_PNG_KEY])
-        png_group.children.addStringValueInput(PNG_SUB_PATH_INPUT_ID, 'PNG subpath:', pref[config.PNG_SUB_PATH_KEY])
+        png_group = inputs.addGroupCommandInput('png_group_id', 'Component pictures (PNG)')
+        png_group.children.addBoolValueInput(EXPORT_PNG_INPUT_ID, 'Export component pictures', True, '', pref[config.EXPORT_PNG_KEY])
+        png_group.children.addStringValueInput(PNG_SUB_PATH_INPUT_ID, 'Subfolder:', pref[config.PNG_SUB_PATH_KEY])
         
 
