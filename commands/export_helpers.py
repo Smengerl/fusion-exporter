@@ -94,22 +94,19 @@ def export_stl_to_file(file_name: str, occ: adsk.fusion.Occurrence):
     """Export the given occurrence to an STL file.
     """
     ao = apper.AppObjects()
-    app: adsk.core.Application = ao.app
-    product = app.activeProduct
-    design = adsk.fusion.Design.cast(product)
-    export_mgr = design.exportManager
 
-    root = design.rootComponent
+    root = ao.root_comp
     occs = root.occurrences
     for i in range(occs.count):
         other = occs.item(i)
         set_occurrence_recursive(other, lambda o: is_parent_of(o, occ)) # Make the current occurence and all its parents visible
 
+    export_mgr = ao.design.exportManager
     opts = export_mgr.createSTLExportOptions(occ, file_name)
     export_mgr.execute(opts)
 
 
-def export_root_component_image(file_name: str, width: int, height: int):
+def export_full_assembly_image(file_name: str, width: int, height: int):
     """Export a viewport snapshot of the root to an PNG file.
     """
     ao = apper.AppObjects()
@@ -120,7 +117,7 @@ def export_root_component_image(file_name: str, width: int, height: int):
     root.isOriginFolderLightBulbOn = False
     root.isSketchFolderLightBulbOn = False
     root.isBodiesFolderLightBulbOn = True
-    root.isConstructionFolderLightBulbOn = True
+    root.isConstructionFolderLightBulbOn = False
     
     occs = root.occurrences
     for i in range(occs.count):
@@ -138,6 +135,12 @@ def export_png_to_file(file_name: str, occ: adsk.fusion.Occurrence, width: int, 
     viewport = ao.app.activeViewport
 
     root = ao.root_comp
+    root.isJointsFolderLightBulbOn = False
+    root.isOriginFolderLightBulbOn = False
+    root.isSketchFolderLightBulbOn = False
+    root.isBodiesFolderLightBulbOn = False
+    root.isConstructionFolderLightBulbOn = False
+
     occs = root.occurrences
     for i in range(occs.count):
         other = occs.item(i)
@@ -156,14 +159,69 @@ def export_png_to_file(file_name: str, occ: adsk.fusion.Occurrence, width: int, 
 #    view.saveAsImageFileWithOptions(export_options)
 
 
+
+
+
+
+def export_root_stl_to_file(file_name: str):
+    """Export the given occurrence to an STL file.
+    """
+    ao = apper.AppObjects()
+
+    root = ao.root_comp
+    occs = root.occurrences
+    for i in range(occs.count):
+        other = occs.item(i)
+        set_occurrence_recursive(other, lambda o: False) # Hide all other elements  
+
+    export_mgr = ao.design.exportManager
+    opts = export_mgr.createSTLExportOptions(root, file_name)
+    export_mgr.execute(opts)
+
+def export_root_png_to_file(file_name: str, width: int, height: int):
+    """Export a viewport snapshot of the given occurrence to an PNG file.
+    """
+    ao = apper.AppObjects()
+    viewport = ao.app.activeViewport
+
+    root = ao.root_comp
+    root.isJointsFolderLightBulbOn = False
+    root.isOriginFolderLightBulbOn = False
+    root.isSketchFolderLightBulbOn = False
+    root.isBodiesFolderLightBulbOn = True
+    root.isConstructionFolderLightBulbOn = False
+
+    occs = root.occurrences
+    for i in range(occs.count):
+        other = occs.item(i)
+        set_occurrence_recursive(other, lambda o: False) # Hide all other elements
+
+    viewport.fit()
+    viewport.saveAsImageFile(file_name, width, height)
+
+#    export_options = adsk.fusion.ImageExportOptions.create(file_name)
+#    export_options.width = width
+#    export_options.height = height
+#    export_options.isBackgroundTransparent = transparency
+#    export_options.imageType = adsk.core.ImageFileTypes.PNGImageFileType
+#    view.saveAsImageFileWithOptions(export_options)
+
+
+
+
 def is_zsb(occ: adsk.fusion.Occurrence) -> bool:
     return occ.childOccurrences.count > 0
+
+def is_exportable_component(occ: adsk.fusion.Occurrence) -> bool:
+    return occ.component.bRepBodies.count > 0
 
 def export_components(components: List[adsk.fusion.Occurrence], 
                       include_referenced_components: bool,
                       include_flagged_components: bool,
+                      root_name: str,
                       export_stl: bool, stl_path: Path,
-                      export_zsb: bool, zsb_path: Path, full_zsb_export: bool,
+                      export_zsb: bool, zsb_path: Path, 
+                      full_zsb_export: bool, full_zsb_name: str,
                       export_png: bool, png_path: Path, 
                       width: int, height: int):
     ao = apper.AppObjects()
@@ -174,49 +232,63 @@ def export_components(components: List[adsk.fusion.Occurrence],
     dlg.isCancelButtonShown = True
     dlg.show('Exporting', '%p%% (%v of %m components exported)', 0, len(components), 1)
     
-    exported_components = set()
-
-
     ao.ui.activeSelections.clear() # Make sure no components are selected
     ao.design.activateRootComponent() # Ensure root component is active = no component is selected and hence blue
     
-    
-
+    exported_components = set()
     skippedItems = 0
     zsb_exported = 0
     stl_exported = 0
     png_exported = 0
 
+    # Export root component if it has bodies 
+    root = ao.root_comp
+    if root.bRepBodies.count > 0: 
+        if export_stl:
+            out_stl = str((stl_path / f"{root_name}.stl").resolve())
+            export_root_stl_to_file(out_stl)
+            stl_exported += 1
+        if export_png:
+            out_png = str((png_path / f"{root_name}.png").resolve())
+            export_root_png_to_file(out_png, width, height)
+            png_exported += 1
+
+    # Export full ZSB if requested
     if full_zsb_export:
-        full_zsb = str((zsb_path / f"full.png").resolve())
-        export_root_component_image(full_zsb, width, height)
+        full_zsb = str((zsb_path / f"{full_zsb_name}.png").resolve())
+        export_full_assembly_image(full_zsb, width, height)
         zsb_exported += 1
 
+    # Export each component to STL and PNG
     for occ in components:
-        dlg.progressValue += 1
-        if occ.isReferencedComponent and not include_referenced_components:
-            skippedItems += 1
-            continue
-        if occ.name.startswith('_') and not include_flagged_components:
+        if dlg.wasCancelled:
+            break
+
+        if type(occ) != adsk.fusion.Occurrence:
             skippedItems += 1
             continue
 
-        if occ.component.id in exported_components:
+        dlg.progressValue += 1
+        if occ.isReferencedComponent and not include_referenced_components: # Skip referenced components if not wanted
+            skippedItems += 1
+            continue
+        if occ.name.startswith('_') and not include_flagged_components: # Skip flagged components if not wanted
+            skippedItems += 1
+            continue
+
+        if occ.component.id in exported_components: # Skip already exported components
             skippedItems += 1
             continue
         else:
             exported_components.add(occ.component.id)
 
-        if dlg.wasCancelled:
-            break
-
         safe = sanitize_filename(occ.component.name)
-        if is_zsb(occ):
+        if is_zsb(occ): # Export ZSB picture for assemblies
             if export_zsb:
                 out_zsb = str((zsb_path / f"{safe}.png").resolve())
                 export_png_to_file(out_zsb, occ, width, height)
                 zsb_exported += 1
-        else:
+        if is_exportable_component(occ): # Export only if it has bodies
             if export_stl:
                 out_stl = str((stl_path / f"{safe}.stl").resolve())
                 export_stl_to_file(out_stl, occ)
