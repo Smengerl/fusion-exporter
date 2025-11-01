@@ -108,6 +108,10 @@ def run(context):
             pref[config.ZSB_SUB_PATH_KEY] = config.ZSB_SUB_PATH_DEFAULT_VALUE
         if not config.EXPORT_FULL_ZSB_KEY in pref:
             pref[config.EXPORT_FULL_ZSB_KEY] = config.EXPORT_FULL_ZSB_DEFAULT_VALUE
+        if not config.EXPORT_FULL_ZSB_NAME_KEY in pref:
+            pref[config.EXPORT_FULL_ZSB_NAME_KEY] = config.EXPORT_FULL_ZSB_NAME_DEFAULT_VALUE
+        if not config.ROOT_COMPONENT_NAME_KEY in pref:
+            pref[config.ROOT_COMPONENT_NAME_KEY] = config.ROOT_COMPONENT_NAME_DEFAULT_VALUE
         if not config.EXPORT_PNG_KEY in pref:
             pref[config.EXPORT_PNG_KEY] = config.EXPORT_PNG_DEFAULT_VALUE
         if not config.PNG_SUB_PATH_KEY in pref:
