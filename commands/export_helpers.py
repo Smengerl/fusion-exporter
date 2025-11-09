@@ -123,7 +123,11 @@ def export_full_assembly_image(file_name: str, width: int, height: int):
     for i in range(occs.count):
         other = occs.item(i)
         set_occurrence_recursive(other, lambda o: True) # Make all elements visible
-
+    
+    # viewport.camera.isFitView = True
+    viewport.camera.isSmoothTransition = False
+    viewport.camera.viewOrientation = adsk.core.ViewOrientations.IsoTopRightViewOrientation # type: ignore[assignment]
+    viewport.camera.cameraType = adsk.core.CameraTypes.PerspectiveCameraType # type: ignore[assignment]
     viewport.fit()
     viewport.saveAsImageFile(file_name, width, height)
 
@@ -148,6 +152,10 @@ def export_png_to_file(file_name: str, occ: adsk.fusion.Occurrence, width: int, 
 
     set_occurrence_recursive(occ, lambda o: True) # Ensure all children of occurence are also visible
 
+    # viewport.camera.isFitView = True
+    viewport.camera.isSmoothTransition = False
+    viewport.camera.viewOrientation = adsk.core.ViewOrientations.IsoTopRightViewOrientation # type: ignore[assignment]
+    viewport.camera.cameraType = adsk.core.CameraTypes.PerspectiveCameraType # type: ignore[assignment]
     viewport.fit()
     viewport.saveAsImageFile(file_name, width, height)
 
@@ -196,6 +204,10 @@ def export_root_png_to_file(file_name: str, width: int, height: int):
         other = occs.item(i)
         set_occurrence_recursive(other, lambda o: False) # Hide all other elements
 
+    # viewport.camera.isFitView = True
+    viewport.camera.isSmoothTransition = False
+    viewport.camera.viewOrientation = adsk.core.ViewOrientations.IsoTopRightViewOrientation # type: ignore[assignment]
+    viewport.camera.cameraType = adsk.core.CameraTypes.PerspectiveCameraType # type: ignore[assignment]
     viewport.fit()
     viewport.saveAsImageFile(file_name, width, height)
 
