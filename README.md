@@ -1,5 +1,9 @@
 # Auto GitHub Exporter
 
+[![3D Printing](https://img.shields.io/badge/3D_printing-STL-green)](#)
+[![CAD](https://img.shields.io/badge/CAD-Autodesk_Fusion-green)](#)
+[![License](https://img.shields.io/badge/license-Beerware-green)](#)
+
 Automatic exporter for Autodesk Fusion 360 files into the formats commonly used in the author's GitHub projects.
 
 This add-in automates exporting Fusion 360 designs (STL, PNG previews, etc.) and places the results into a folder layout ready to be published alongside project source on GitHub.
