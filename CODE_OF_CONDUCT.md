@@ -2,7 +2,7 @@
 
 ## Our standards
 
-This project follows the Contributor Covenant version 2.1. We expect community members to be respectful and constructive.
+This project follows the Contributor Covenant version 3.0. We expect community members to be respectful and constructive.
 
 ## Enforcement
 
