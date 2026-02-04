@@ -115,12 +115,6 @@ class AbstractExportStlPngCommand(ABC, apper.Fusion360CommandBase):
             
         full_zsb_export = input_values.get(EXPORT_FULL_ZSB_INPUT_ID, config.EXPORT_FULL_ZSB_DEFAULT_VALUE)
         full_zsb_name = input_values.get(EXPORT_FULL_ZSB_NAME_INPUT_ID, config.EXPORT_FULL_ZSB_NAME_DEFAULT_VALUE)
-        full_zsb_path = base / full_zsb_name
-        if full_zsb_export:
-            err = export_helpers.check_folder_validity(full_zsb_path)
-            if err:
-                ao.ui.messageBox(f'Invalid full ZSB folder: {full_zsb_path} - {err}')  # type: ignore
-                return
 
         export_stl = input_values.get(EXPORT_STL_INPUT_ID, config.EXPORT_STL_DEFAULT_VALUE)
         stl_sub = input_values.get(STL_SUB_PATH_INPUT_ID, config.STL_SUB_PATH_DEFAULT_VALUE)
