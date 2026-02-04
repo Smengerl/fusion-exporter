@@ -295,12 +295,9 @@ def export_components(components: List[adsk.fusion.Occurrence],
             exported_components.add(occ.component.id)
 
         safe = sanitize_filename(occ.component.name)
-        if is_zsb(occ): # Export ZSB picture for assemblies
-            if export_zsb:
-                out_zsb = str((zsb_path / f"{safe}.png").resolve())
-                export_png_to_file(out_zsb, occ, width, height)
-                zsb_exported += 1
-        if is_exportable_component(occ): # Export only if it has bodies
+        
+        # If component has bodies -> export as STL + PNG (regardless of whether it's an assembly)
+        if is_exportable_component(occ):
             if export_stl:
                 out_stl = str((stl_path / f"{safe}.stl").resolve())
                 export_stl_to_file(out_stl, occ)
@@ -309,6 +306,12 @@ def export_components(components: List[adsk.fusion.Occurrence],
                 out_png = str((png_path / f"{safe}.png").resolve())
                 export_png_to_file(out_png, occ, width, height)
                 png_exported += 1
+        # If it's an assembly WITHOUT own bodies -> export only as ZSB PNG
+        elif is_zsb(occ):
+            if export_zsb:
+                out_zsb = str((zsb_path / f"{safe}.png").resolve())
+                export_png_to_file(out_zsb, occ, width, height)
+                zsb_exported += 1
 
 
     dlg.hide()
