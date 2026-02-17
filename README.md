@@ -2,7 +2,7 @@
 
 [![3D Printing](https://img.shields.io/badge/3D_printing-STL-green)](#)
 [![CAD](https://img.shields.io/badge/CAD-Autodesk_Fusion-green)](#)
-[![License](https://img.shields.io/badge/license-Beerware-green)](#)
+[![License](https://img.shields.io/badge/license-CC%20BY--SA%204.0-blue)](http://creativecommons.org/licenses/by-sa/4.0/)
 
 Automatic exporter for Autodesk Fusion 360 files into the formats commonly used in the author's GitHub projects.
 
@@ -78,7 +78,7 @@ See `CONTRIBUTING.md` for details and follow the `CODE_OF_CONDUCT.md` when contr
 
 ## License
 
-This project is licensed under the MIT License — see `LICENSE.txt`.
+This project is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0) — see `LICENSE.txt` for details or visit http://creativecommons.org/licenses/by-sa/4.0/
 
 ## Authors
 
